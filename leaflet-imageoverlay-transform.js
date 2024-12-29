@@ -89,6 +89,8 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
         if (this._map) {
             if (interactive && !this._rotationHandle) {
                 this._initializeHandles();
+                // Add drag listener only when interactive
+                this._image.addEventListener('mousedown', this._onDragStart);
             } else if (!interactive && this._rotationHandle) {
                 // Remove handles
                 this._rotationHandle.remove();
@@ -117,7 +119,6 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
         }
     },
 
-
     _initializeHandles: function() {
         if (!this._map || this._rotationHandle) return;
 
@@ -143,7 +144,11 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
             })
         }).addTo(this._map);
 
-        this._image.addEventListener('mousedown', this._onDragStart.bind(this));
+        // Only add drag listener if interactive
+        if (this.options.interactive) {
+            this._image.addEventListener('mousedown', this._onDragStart);
+        }
+
         this._rotationHandle.on('dragstart', this._onRotateStart);
         this._rotationHandle.on('drag', this._onRotate);
         this._rotationHandle.on('dragend', this._onRotateEnd);
@@ -271,6 +276,8 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
     },
 
     _onDragStart: function(e) {
+        if (!this.options.interactive) return;
+
         // Stop event propagation to prevent map dragging
         L.DomEvent.stopPropagation(e);
         L.DomEvent.preventDefault(e);

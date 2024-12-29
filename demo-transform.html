@@ -64,8 +64,8 @@
     <script>
         var map = new L.Map('map');
 
-        var positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+        var positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CartoDB</a>',
             maxNativeZoom: 18,
             maxZoom: 24
         }).addTo(map);
@@ -81,7 +81,7 @@
         var overlay = L.imageOverlay.transform("./palacio-de-el-pardo-821175.jpg", transform, {
             opacity: 0.4,
             interactive: true,
-            attribution: "Historical building plan &copy; <a href='http://www.ign.es'>Instituto Geográfico Nacional de España</a>"
+            attribution: "Historical building plan &copy; <a href='https://www.ign.es'>Instituto Geográfico Nacional de España</a>"
         });
 
         // Set initial map bounds and add overlay
