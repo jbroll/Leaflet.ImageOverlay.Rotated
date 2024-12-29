@@ -16,6 +16,11 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
             rotation: 0 // degrees
         };
 
+        this._scaleStartDistance = 0;
+        this._scaleStartTransform = null;
+        this._rotationStartAngle = 0;
+        this._rotationStartTransform = null;
+
         // Create temporary corners - will be updated when map is available
         const tempCorners = {
             topLeft: this._transform.center,
@@ -23,7 +28,6 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
             bottomLeft: this._transform.center
         };
         
-        // Call parent initialize with temporary corners
         L.ImageOverlay.Rotated.prototype.initialize.call(
             this, 
             image, 
@@ -33,17 +37,20 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
             options
         );
 
-        // Bind methods
         this._onDrag = this._onDrag.bind(this);
         this._onRotate = this._onRotate.bind(this);
+        this._onRotateStart = this._onRotateStart.bind(this);
+        this._onRotateEnd = this._onRotateEnd.bind(this);
         this._onScale = this._onScale.bind(this);
+        this._onScaleStart = this._onScaleStart.bind(this);
+        this._onScaleEnd = this._onScaleEnd.bind(this);
     },
+
 
     onAdd: function(map) {
         L.ImageOverlay.Rotated.prototype.onAdd.call(this, map);
         
-        // Now that we have the map, update corners
-        this._updateCorners();
+        this._updateCorners();      // Now that we have the map, update corners
         
         if (this.options.interactive) {
             // Wait for image to load before initializing handles
@@ -100,16 +107,14 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
             })
         }).addTo(this._map);
 
-        // Add event listeners
         this._image.addEventListener('mousedown', this._onDragStart.bind(this));
+        this._rotationHandle.on('dragstart', this._onRotateStart);
         this._rotationHandle.on('drag', this._onRotate);
+        this._rotationHandle.on('dragend', this._onRotateEnd);
+        this._scaleHandle.on('dragstart', this._onScaleStart);
         this._scaleHandle.on('drag', this._onScale);
+        this._scaleHandle.on('dragend', this._onScaleEnd);
 
-        // Debug logging
-        console.log('Rotation handle created:', this._rotationHandle);
-        console.log('Scale handle created:', this._scaleHandle);
-
-        // Stop map drag when interacting with handles
         this._rotationHandle.on('mousedown', () => {
             this._map.dragging.disable();
         });
@@ -117,7 +122,6 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
             this._map.dragging.disable();
         });
     },
-
 
     _updateCorners: function() {
         if (!this._map || !this._rawImage) return;
@@ -131,12 +135,9 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
         }
     },
 
-
     _metersToLatLng: function(centerLatLng, xMeters, yMeters) {
-        
         const lat = centerLatLng.lat + (yMeters / R) * (180 / Math.PI);
         const lng = centerLatLng.lng + (xMeters / R) * (180 / Math.PI) / Math.cos(centerLatLng.lat * Math.PI / 180);
-        
         return L.latLng(lat, lng);
     },
 
@@ -187,27 +188,50 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
         };
     },
 
-    _onScale: function(e) {
+    _onRotateStart: function(e) {
+        // Store initial angle and transform
         const center = this._transform.center;
         const handle = e.target.getLatLng();
         
-        // Convert the handle position to meters from center
-        const handleMeters = this._latLngToMeters(center, handle);
+        // Calculate initial angle between center and handle
+        const point1 = this._map.latLngToContainerPoint(center);
+        const point2 = this._map.latLngToContainerPoint(handle);
         
-        // Calculate distance in meters
-        const distance = Math.sqrt(
-            Math.pow(handleMeters.x, 2) + 
-            Math.pow(handleMeters.y, 2)
-        );
+        this._rotationStartAngle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+        this._rotationStartTransform = { ...this._transform };
+    },
+
+    _onRotate: function(e) {
+        if (!this._rotationStartTransform) return;
+
+        const center = this._transform.center;
+        const handle = e.target.getLatLng();
         
-        // Update scale based on distance
-        // This gives us meters per pixel
-        const newScale = distance / (this._rawImage.width / 2);
+        // Calculate current angle between center and handle
+        const point1 = this._map.latLngToContainerPoint(center);
+        const point2 = this._map.latLngToContainerPoint(handle);
+        
+        const currentAngle = Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180 / Math.PI;
+        
+        // Calculate angle difference and update rotation (negative to match handle direction)
+        const angleDiff = this._rotationStartAngle - currentAngle;
+        const newRotation = (this._rotationStartTransform.rotation + angleDiff) % 360;
         
         this.setTransform({
             ...this._transform,
-            scale: newScale
+            rotation: newRotation
         });
+    },
+
+    _onRotateEnd: function() {
+        // Clear rotation state
+        this._rotationStartAngle = 0;
+        this._rotationStartTransform = null;
+        
+        // Re-enable map dragging
+        if (this._map) {
+            this._map.dragging.enable();
+        }
     },
 
     _onDragStart: function(e) {
@@ -258,34 +282,75 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
         e.preventDefault();
     },
 
-    _onRotate: function(e) {
+    _onScaleStart: function(e) {
         const center = this._transform.center;
         const handle = e.target.getLatLng();
         
-        // Calculate angle between center and handle
-        const point1 = this._map.latLngToLayerPoint(center);
-        const point2 = this._map.latLngToLayerPoint(handle);
+        // Convert the handle position to meters from center
+        const handleMeters = this._latLngToMeters(center, handle);
         
-        const angle = (Math.atan2(point2.y - point1.y, point2.x - point1.x) * 180) / Math.PI;
+        // Store initial distance
+        this._scaleStartDistance = Math.sqrt(
+            Math.pow(handleMeters.x, 2) + 
+            Math.pow(handleMeters.y, 2)
+        );
+        
+        this._scaleStartTransform = { ...this._transform };
+    },
+
+    _onScale: function(e) {
+        if (!this._scaleStartTransform) return;
+
+        const center = this._transform.center;
+        const handle = e.target.getLatLng();
+        
+        // Convert the handle position to meters from center
+        const handleMeters = this._latLngToMeters(center, handle);
+        
+        // Calculate current distance
+        const currentDistance = Math.sqrt(
+            Math.pow(handleMeters.x, 2) + 
+            Math.pow(handleMeters.y, 2)
+        );
+        
+        // Calculate scale factor based on distance ratio
+        const scaleFactor = currentDistance / this._scaleStartDistance;
+        
+        // Apply scale factor to starting scale
+        const newScale = this._scaleStartTransform.scale * scaleFactor;
         
         this.setTransform({
             ...this._transform,
-            rotation: angle
+            scale: newScale
         });
     },
 
+    _onScaleEnd: function() {
+        // Clear scale state
+        this._scaleStartDistance = 0;
+        this._scaleStartTransform = null;
+        
+        // Re-enable map dragging
+        if (this._map) {
+            this._map.dragging.enable();
+        }
+    },
+ 
     _calculateRotationHandlePosition: function() {
         const heightMeters = this._rawImage.height * this._transform.scale;
-        const handleOffset = heightMeters * 0.55;
-
-        return this._metersToLatLng(this._transform.center, 0, -handleOffset);
+        const handleOffset = heightMeters * 0.55; // 55% of height for handle position
+        const rotation = (this._transform.rotation * Math.PI) / 180;
+        
+        // Calculate rotated position (positive sin for same direction as image)
+        const x = handleOffset * Math.sin(rotation);
+        const y = -handleOffset * Math.cos(rotation);
+        
+        return this._metersToLatLng(this._transform.center, x, y);
     },
 
     _calculateScaleHandlePosition: function() {
-        const corners = this._calculateCorners();
-        return corners.topRight;
+        return this._calculateCorners().topRight;
     }
-
 });
 
 // Factory methods
@@ -293,5 +358,4 @@ L.ImageOverlay.transform = function(imgSrc, transform, options) {
     return new L.ImageOverlay.Transform(imgSrc, transform, options);
 };
 
-// Add to the L.imageOverlay namespace for consistency with other Leaflet factory methods
 L.imageOverlay.transform = L.ImageOverlay.transform;
