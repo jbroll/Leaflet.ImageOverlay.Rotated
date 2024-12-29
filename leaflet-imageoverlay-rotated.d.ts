@@ -1,0 +1,1 @@
+leaflet-rotated-overlay.d.ts

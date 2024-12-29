@@ -1,0 +1,44 @@
+.leaflet-image-transform-handle {
+    position: absolute;
+    width: 20px !important;
+    height: 20px !important;
+    margin-left: -10px !important;
+    margin-top: -10px !important;
+    background-color: #ffffff !important;
+    border: 3px solid #0078A8 !important;
+    border-radius: 50%;
+    opacity: 1 !important;
+    z-index: 1000 !important;  /* Ensure it's above other elements */
+}
+
+.leaflet-image-rotate-handle {
+    background-color: red !important;  /* Temporary debug color */
+}
+
+.leaflet-image-rotate-handle::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -60px;
+    width: 3px;
+    height: 60px;
+    background-color: #0078A8;
+    transform: translateX(-50%);
+    opacity: 1 !important;
+    z-index: 999 !important;
+}
+
+.leaflet-image-scale-handle {
+    background-color: blue !important;  /* Temporary debug color */
+}
+
+/* Ensure the markers are above other map elements */
+.leaflet-marker-pane {
+    z-index: 999 !important;
+}
+
+.leaflet-div-icon {
+    background: none !important;
+    border: none !important;
+    opacity: 1 !important;
+}

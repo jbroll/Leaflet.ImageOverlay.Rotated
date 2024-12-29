@@ -1,0 +1,15 @@
+JUNK/
+Notes
+Vale
+
+error.log
+package-lock.json
+
+*.db
+*.db-*
+
+dist/
+node_modules/
+
+public/
+tiles/
