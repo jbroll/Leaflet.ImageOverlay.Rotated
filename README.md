@@ -1,91 +1,151 @@
+# Leaflet ImageOverlay Transform
 
-# Leaflet.ImageOverlay.Rotated
+A Leaflet plugin that provides enhanced image overlay capabilities, allowing you to transform (rotate, scale, and move) images on Leaflet maps with interactive controls.
 
-Display rotated and skewed images in your LeafletJS maps.
+## Features
 
+- **Rotated Image Overlays**: Display images at any angle on your map
+- **Transform Controls**: Interactive handles for rotating and scaling images
+- **Draggable**: Move images by dragging
+- **Scale Control**: Adjust image size using meters per pixel
+- **Center-based Positioning**: Position images using center point and transformation parameters
+- **TypeScript Support**: Includes TypeScript type definitions
 
-This LeafletJS plugin adds a new class, `L.ImageOverlay.Rotated`, subclass of
-[`L.ImageOverlay`](http://leafletjs.com/reference.html#imageoverlay). The main
-difference is that the position of `L.ImageOverlay` is defined by a `L.LatLngBounds`
-(the `L.LatLng`s of the top-left and bottom-right corners of the image),
-whereas `L.ImageOverlay.Rotated` is defined by **three** points (the `L.LatLng`s
-of the top-left, top-right and bottom-left corners of the image).
+## Installation
 
-The image will be rotated *and* skewed (as the three corner points might not form
-a 90-degree angle).
+You can install the package via npm:
 
-## Demo
+```bash
+npm install leaflet-imageoverlay-transform
+```
 
-http://ivansanchez.github.io/Leaflet.ImageOverlay.Rotated/demo.html
+Or include it directly in your HTML:
 
+```html
+<link rel="stylesheet" href="path/to/leaflet-imageoverlay-transform.css" />
+<script src="path/to/leaflet-imageoverlay-rotated.js"></script>
+<script src="path/to/leaflet-imageoverlay-transform.js"></script>
+```
 
-### Usage
+## Basic Usage
 
-To instantiate a `L.ImageOverlay.Rotated`, specify the image URL, the three corner
-points, and any `L.ImageOverlay` options in the `L.imageOverlay.rotated` factory
-method, for example:
+```javascript
+// Create a map
+var map = L.map('map').setView([51.505, -0.09], 13);
 
-```js
-var topleft    = L.latLng(40.52256691873593, -3.7743186950683594),
-	topright   = L.latLng(40.5210255066156, -3.7734764814376835),
-	bottomleft = L.latLng(40.52180437272552, -3.7768453359603886);
+// Add your tile layer
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-var overlay = L.imageOverlay.rotated("./palacio.jpg", topleft, topright, bottomleft, {
-	opacity: 0.4,
-	interactive: true,
-	attribution: "&copy; <a href='http://www.ign.es'>Instituto Geográfico Nacional de España</a>"
+// Define transform parameters
+var transform = {
+    center: L.latLng(51.505, -0.09),
+    scale: 0.5,  // meters per pixel
+    rotation: 45 // degrees
+};
+
+// Create and add the transform overlay
+var overlay = L.imageOverlay.transform("path/to/image.jpg", transform, {
+    opacity: 0.8,
+    interactive: true
 }).addTo(map);
 ```
 
-`topleft`, `topright` and `bottomleft` are instances of `L.LatLng`, corresponding
-to the locations of the corners of the image. These three `L.LatLng`s might not
-neccesarily be at the top or at the left of each other.
+## API Reference
 
-Alternatively, the first parameter to the constructor can be an instance of
-[HTMLImage](https://developer.mozilla.org/docs/Web/API/HTMLImageElement).
+### L.ImageOverlay.Transform
 
+#### Creation
 
-Additionally, the `reposition` method allows to reset the `LatLng`s for the corner
-points, effectively moving the image:
-
-```js
-overlay.reposition(updatedTopLeft, updatedTopRight, updatedBottomLeft);
+```javascript
+L.imageOverlay.transform(<String|HTMLImageElement|HTMLCanvasElement> image, 
+                        <Transform> transform, 
+                        <ImageOverlayOptions> options?)
 ```
 
+#### Transform Object
 
-### Using the code in other projects
+```typescript
+interface Transform {
+    center: L.LatLng;    // Center position of the image
+    scale: number;       // Scale in meters per pixel
+    rotation: number;    // Rotation in degrees
+}
+```
 
-The classic way: copy the `Leaflet.ImageOverlay.Rotate.js` file and include it
-in your webpage.
+#### Methods
 
-`npm install leaflet-imageoverlay-rotated` can be used to include this project
-as a dependency. The `package.json` file will allow webpack/browserify to work
-its magic.
+- `setTransform(transform: Transform)`: Update the image transformation
+- `getTransform()`: Get current transform parameters
+- `setInteractive(interactive: boolean)`: Enable/disable transform controls
+- `setOpacity(opacity: number)`: Set the overlay opacity
 
-There is also some support for Bower (in the form of a `bower.json` file), but
-Bower is being deprecated, so NPM is preferred.
+#### Options
 
-This plugin has been tested only with Leaflet 1.0.0-beta and 1.0.0-rc1. Don't
-expect it to work with 0.7.x.
+Extends standard Leaflet's `ImageOverlay` options with:
 
+- `interactive: boolean` - Enable transform controls (default: false)
+- All standard L.ImageOverlay options are supported
 
-### Legalese
+## Interactive Controls
 
-The code for this plugin is under a Beerware license:
+When `interactive: true` is set, the overlay provides three ways to transform the image:
 
-----------------------------------------------------------------------------
+1. **Drag**: Click and drag the image to move it
+2. **Rotate**: Use the handle above the image to rotate
+3. **Scale**: Use the handle at the top-right corner to scale the image
 
-"THE BEER-WARE LICENSE":
-<ivan@sanchezortega.es> wrote this file. As long as you retain this notice you
-can do whatever you want with this stuff. If we meet some day, and you think
-this stuff is worth it, you can buy me a beer in return.
+## Events
 
-----------------------------------------------------------------------------
+The overlay extends Leaflet's ImageOverlay events and includes:
 
+- Standard Leaflet events (`click`, `dblclick`, etc.)
+- Mouse events for interaction with transform handles
 
-The demo uses an historical building plan dated from 1863, from the archives of the
-[Instituto Geográfico Nacional de España](http://www.ign.es). These images
-are [available under a non-commercial license](http://centrodedescargas.cnig.es/CentroDescargas/cambiarMenu.do?destino=infoCondicionesLicencia).
+## Browser Support
 
+- Supports all modern browsers
+- Requires Leaflet 1.0.0 or newer
 
+## Building and Development
 
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm start
+
+# Build for production
+npm run build
+```
+
+## Examples
+
+Check out the demo files included in the project:
+- `demo.html`: Basic rotated image overlay demo
+- `demo-transform.html`: Interactive transform controls demo
+
+## License
+
+This project is licensed under the Beerware License. See the LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Credits
+
+This plugin builds upon the work of:
+- Original Leaflet.ImageOverlay.Rotated by Iván Sánchez Ortega
+- Contributions from Julius Buset Asplin and other community members
+
+## Support
+
+For questions and support:
+- Open an issue in the GitHub repository
+- Check existing issues for similar problems
+- Read the documentation carefully

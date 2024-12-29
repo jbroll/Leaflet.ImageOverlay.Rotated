@@ -39,6 +39,7 @@
 <body>
     <div id="map"></div>
     <div class="controls">
+        <button onclick="toggleInteractive()" id="interactiveButton">Disable Controls</button>
         Overlay opacity:
         <button onclick="setOverlayOpacity(0.1)">10%</button>
         <button onclick="setOverlayOpacity(0.2)">20%</button>
@@ -118,6 +119,14 @@
                 L.DomEvent.preventDefault(e);
             }
         });
+
+        function toggleInteractive() {
+            const button = document.getElementById('interactiveButton');
+            const isCurrentlyInteractive = button.textContent === 'Disable Controls';
+
+            overlay.setInteractive(!isCurrentlyInteractive);
+            button.textContent = isCurrentlyInteractive ? 'Enable Controls' : 'Disable Controls';
+        }
     </script>
 </body>
 </html>

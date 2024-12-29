@@ -38,6 +38,7 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
         );
 
         this._onDrag = this._onDrag.bind(this);
+        this._onDragStart = this._onDragStart.bind(this);
         this._onRotate = this._onRotate.bind(this);
         this._onRotateStart = this._onRotateStart.bind(this);
         this._onRotateEnd = this._onRotateEnd.bind(this);
@@ -82,8 +83,43 @@ L.ImageOverlay.Transform = L.ImageOverlay.Rotated.extend({
         return { ...this._transform };
     },
 
+    setInteractive: function(interactive) {
+        this.options.interactive = interactive;
+        
+        if (this._map) {
+            if (interactive && !this._rotationHandle) {
+                this._initializeHandles();
+            } else if (!interactive && this._rotationHandle) {
+                // Remove handles
+                this._rotationHandle.remove();
+                this._scaleHandle.remove();
+                this._rotationHandle = null;
+                this._scaleHandle = null;
+                
+                // Remove drag listeners
+                this._image.removeEventListener('mousedown', this._onDragStart);
+                
+                // Reset dragging state
+                this._isDragging = false;
+                if (this._map.dragging.enabled()) {
+                    this._map.dragging.enable();
+                }
+            }
+            
+            // Update the interactive class and target
+            if (interactive) {
+                L.DomUtil.addClass(this._image, 'leaflet-interactive');
+                this.addInteractiveTarget(this._image);
+            } else {
+                L.DomUtil.removeClass(this._image, 'leaflet-interactive');
+                this.removeInteractiveTarget(this._image);
+            }
+        }
+    },
+
+
     _initializeHandles: function() {
-        if (!this._map) return;
+        if (!this._map || this._rotationHandle) return;
 
         // Create rotation handle with explicit div structure
         this._rotationHandle = L.marker(this._calculateRotationHandlePosition(), {
